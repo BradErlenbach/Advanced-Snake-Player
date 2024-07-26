@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TC0LV766NH"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-TC0LV766NH');
+    </script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6559573485611070"
+        crossorigin="anonymous"></script>
+    <title>Classic Snake</title>
+    <link rel="icon" type="image/png" href="snake-icon.png">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: white;
+            /* Changed to white */
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+        }
+
+        canvas {
+            max-width: 90%;
+            max-height: 90%;
+            border: 10px solid #000;
+            border-radius: 10px;
+            /* Rounded corners */
+            box-shadow: 0px 0px 30px rgba(0, 0, 0, 0.1);
+            /* Subtle drop shadow */
+            background: skyblue;
+            /* Light gray background */
+        }
+
+        .top-bar {
+            width: 100%;
+            height: 60px;
+            background-color: black;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .top-bar {
+            align-self: flex-start;
+        }
+
+
+        .ad-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: black;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .top-bar a,
+        .top-bar button {
+            color: white;
+            text-decoration: none;
+            margin-left: 10px;
+            font-size: 16px;
+            border: none;
+            background: none;
+            outline: none;
+            cursor: pointer;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .top-bar a:last-of-type {
+            margin-right: 50px;
+        }
+
+        .top-bar a:hover,
+        .top-bar button:hover {
+            color: gold;
+        }
+
+        .prompt {
+            position: absolute;
+            top: 43%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            color: black;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        #gameOver button {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 20px;
+            background: #27ae60;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s ease-in-out;
+        }
+
+        #gameOver button:hover {
+            background: #2ecc71;
+        }
+
+        .score-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .score-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 5px;
+        }
+
+        .score-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 24px;
+            color: white;
+            background-color: #000;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .score-value {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 24px;
+            color: white;
+            background-color: #000;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .game-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            width: 100%;
+            padding: 0;
+        }
+
+
+        @media screen and (max-width: 600px) {
+            .top-bar {
+                height: 80px;
+                font-size: 20px;
+            }
+
+            .top-bar a,
+            .top-bar button {
+                font-size: 20px;
+            }
+
+            .score-label,
+            .score-value {
+                font-size: 30px;
+            }
+
+            #gameOver button {
+                padding: 15px 30px;
+            }
+
+            .prompt {
+                font-size: 36px;
+            }
+
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-bar">
+        <div>
+            <button id="pauseButton">Pause (P)</button>
+            <button id="muteButton">Mute</button>
+        </div>
+        <div class="score-container">
+            <span class="score-label">Score:</span>
+            <span id="score" class="score-value">0</span>
+        </div>
+        <div>
+            <a href="privacy.html" target="_blank">Privacy Policy</a>
+            <a href="disclaimer.html" target="_blank">Disclaimer</a>
+        </div>
+    </div>
+    <div class="game-container">
+        <canvas></canvas>
+    </div>
+
+    <div id="prompt" class="prompt">Press Any Arrow Key or Swipe to Begin</div>
+    <div id="gameOver" class="prompt" style="display: none;">
+        <div>Game Over</div>
+        <div><span id="finalScore"></span></div>
+        <button id="playAgainButton">Play Again</button>
+    </div>
+    <script>
+        window.onload = function () {
+            const canvas = document.querySelector("canvas");
+            const context = canvas.getContext("2d");
+
+            let tileSize = 20;
+            let tileCount = Math.floor(Math.min(window.innerWidth, window.innerHeight - 80) / tileSize);
+            let snake = [{ x: Math.floor(tileCount / 2), y: Math.floor(tileCount / 2) }];
+            let apple = { x: Math.floor(tileCount / 3), y: Math.floor(tileCount / 3) };
+            let velocity = { x: 0, y: 0 };
+            let score = 0;
+            let isPaused = false;
+            let isMuted = false;
+            let isGameStarted = false;
+            let isGameOver = false;
+
+            const foodAudio = new Audio('food.mp3');
+            const gameOverAudio = new Audio('game-over.wav');
+            const backgroundMusic = new Audio('background.mp3');
+            backgroundMusic.loop = true;
+
+            function handleKeyDown(event) {
+                if (isGameOver) return;
+
+                if (!isGameStarted) {
+                    isGameStarted = true;
+                    document.getElementById("prompt").style.display = "none";
+                    backgroundMusic.play();
+                }
+
+                if (event.key === "ArrowUp" && velocity.y !== 1) {
+                    velocity = { x: 0, y: -1 };
+                } else if (event.key === "ArrowDown" && velocity.y !== -1) {
+                    velocity = { x: 0, y: 1 };
+                } else if (event.key === "ArrowLeft" && velocity.x !== 1) {
+                    velocity = { x: -1, y: 0 };
+                } else if (event.key === "ArrowRight" && velocity.x !== -1) {
+                    velocity = { x: 1, y: 0 };
+                } else if (event.key === "p" || event.key === "P") {
+                    togglePause();
+                }
+            }
+
+            function handleSwipe(startX, startY, endX, endY) {
+                if (isGameOver) return;
+
+                if (!isGameStarted) {
+                    isGameStarted = true;
+                    document.getElementById("prompt").style.display = "none";
+                    backgroundMusic.play();
+                }
+
+                const swipeDistanceX = endX - startX;
+                const swipeDistanceY = endY - startY;
+
+                if (Math.abs(swipeDistanceX) > Math.abs(swipeDistanceY)) {
+                    if (swipeDistanceX > 0 && velocity.x !== -1) {
+                        velocity = { x: 1, y: 0 };
+                    } else if (swipeDistanceX < 0 && velocity.x !== 1) {
+                        velocity = { x: -1, y: 0 };
+                    }
+                } else {
+                    if (swipeDistanceY > 0 && velocity.y !== -1) {
+                        velocity = { x: 0, y: 1 };
+                    } else if (swipeDistanceY < 0 && velocity.y !== 1) {
+                        velocity = { x: 0, y: -1 };
+                    }
+                }
+            }
+
+            function update() {
+                if (isPaused || isGameOver) return;
+
+                const head = { x: snake[0].x + velocity.x, y: snake[0].y + velocity.y };
+
+                // Wrap around the edges of the screen
+                if (head.x < 0) head.x = tileCount - 1;
+                if (head.x >= tileCount) head.x = 0;
+                if (head.y < 0) head.y = tileCount - 1;
+                if (head.y >= tileCount) head.y = 0;
+
+                snake.unshift(head);
+
+                if (head.x === apple.x && head.y === apple.y) {
+                    score++;
+                    apple = generateApplePosition();
+                    foodAudio.currentTime = 0;
+                    foodAudio.play();
+                    updateScore();
+                } else {
+                    snake.pop();
+                }
+
+                if (checkCollision()) {
+                    gameOver();
+                }
+            }
+
+            function checkCollision() {
+                const head = snake[0];
+                for (let i = 1; i < snake.length; i++) {
+                    if (snake[i].x === head.x && snake[i].y === head.y) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function draw() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                drawGrid();
+
+                snake.forEach((segment, index) => {
+                    const segmentSize = tileSize / 2;
+                    const segmentX = segment.x * tileSize + tileSize / 2;
+                    const segmentY = segment.y * tileSize + tileSize / 2;
+
+                    // Set different colors or patterns for the snake segments
+                    context.fillStyle = index === 0 ? "#006400" : "#00FF00";
+                    context.strokeStyle = "#fff"; // Stroke color for the snake segments
+                    context.lineWidth = 2; // Stroke width for the snake segments
+
+                    // Draw the snake segment as a rounded rectangle
+                    context.beginPath();
+                    context.arc(segmentX, segmentY, segmentSize, 0, 2 * Math.PI);
+                    context.fill();
+                    context.stroke();
+                });
+
+                const appleSize = tileSize / 2;
+                const appleX = apple.x * tileSize + tileSize / 2;
+                const appleY = apple.y * tileSize + tileSize / 2;
+
+                // Draw the apple as a circle
+                context.fillStyle = "#e74c3c";
+                context.beginPath();
+                context.arc(appleX, appleY, appleSize, 0, 2 * Math.PI);
+                context.fill();
+            }
+
+            function drawGrid() {
+                context.strokeStyle = 'd3d3d3'; // Light gray grid lines
+                context.lineWidth = 1;
+
+                // Draw vertical grid lines
+                for (let i = 0; i <= canvas.width; i += tileSize) {
+                    context.beginPath();
+                    context.moveTo(i, 0);
+                    context.lineTo(i, canvas.height);
+                    context.stroke();
+                }
+
+                // Draw horizontal grid lines
+                for (let i = 0; i <= canvas.height; i += tileSize) {
+                    context.beginPath();
+                    context.moveTo(0, i);
+                    context.lineTo(canvas.width, i);
+                    context.stroke();
+                }
+            }
+
+            function generateApplePosition() {
+                const newApple = {
+                    x: Math.floor(Math.random() * tileCount),
+                    y: Math.floor(Math.random() * tileCount),
+                };
+
+                if (snake.some((segment) => segment.x === newApple.x && segment.y === newApple.y)) {
+                    return generateApplePosition();
+                }
+
+                return newApple;
+            }
+
+            function gameLoop() {
+                update();
+                draw();
+            }
+
+            function togglePause() {
+                isPaused = !isPaused;
+                document.getElementById("pauseButton").textContent = isPaused ? "Resume (P)" : "Pause (P)";
+            }
+
+            function toggleMute() {
+                isMuted = !isMuted;
+                document.getElementById("muteButton").textContent = isMuted ? "Unmute" : "Mute";
+                if (isMuted) {
+                    backgroundMusic.pause();
+                    foodAudio.muted = true;
+                    gameOverAudio.muted = true;
+                } else {
+                    backgroundMusic.play();
+                    foodAudio.muted = false;
+                    gameOverAudio.muted = false;
+                }
+            }
+
+            function updateScore() {
+                document.getElementById("score").textContent = score;
+            }
+
+            function initialize() {
+                if (isMobile()) { // if mobile
+                    tileSize = 40; // 2x the size of your desired tile size
+                    tileCount = Math.floor(Math.min(window.innerWidth, window.innerHeight - 80) / tileSize);
+                } else { // if desktop
+                    const shortestSide = Math.min(window.innerWidth, window.innerHeight - 80);
+                    tileSize = Math.floor(shortestSide / tileCount);
+                }
+
+                canvas.width = tileSize * tileCount;
+                canvas.height = tileSize * tileCount;
+                document.addEventListener("keydown", handleKeyDown);
+                canvas.addEventListener("touchstart", handleTouchStart, false);
+                canvas.addEventListener("touchmove", handleTouchMove, false);
+            }
+
+
+            function resetGame() {
+                snake = [{ x: Math.floor(tileCount / 2), y: Math.floor(tileCount / 2) }];
+                apple = { x: Math.floor(tileCount / 3), y: Math.floor(tileCount / 3) };
+                velocity = { x: 0, y: 0 };
+                score = 0;
+                isPaused = false;
+                isGameStarted = false;
+                isGameOver = false;
+                document.getElementById("prompt").style.display = "block";
+                document.getElementById("finalScore").textContent = "";
+                updateScore();
+            }
+
+            function gameOver() {
+                isGameOver = true;
+                gameOverAudio.currentTime = 0;
+                gameOverAudio.play();
+                document.getElementById("gameOver").style.display = "block";
+                document.getElementById("finalScore").textContent = "Final Score: " + score;
+            }
+
+            function playAgain() {
+                document.getElementById("gameOver").style.display = "none";
+                resetGame();
+            }
+
+            function handleTouchStart(event) {
+                touchStartX = event.touches[0].clientX;
+                touchStartY = event.touches[0].clientY;
+            }
+
+            function handleTouchMove(event) {
+                event.preventDefault();
+                touchEndX = event.touches[0].clientX;
+                touchEndY = event.touches[0].clientY;
+
+                handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY);
+            }
+
+            initialize();
+            setInterval(gameLoop, 1000 / 10); // 10 frames per second
+            window.addEventListener('resize', initialize);
+
+            document.getElementById("pauseButton").addEventListener("click", togglePause);
+            document.getElementById("muteButton").addEventListener("click", toggleMute);
+            document.getElementById("playAgainButton").addEventListener("click", playAgain);
+            updateScore();
+        };
+
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+    </script>
+</body>
+
+</html>
